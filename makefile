@@ -1,8 +1,7 @@
-all : server client
-      gcc DUMBserver.c -o DUMBserver DUMBclient.c -o DUMBclient
-serve :DUMBserver.c DUMBserver.h
-              gcc DUMBserver.c -o DUMBserver
-client :DUMBclient.c DUMBclient.h
-            gcc DUMBclient.c -o DUMBclient
+all : serve client
+serve :
+	gcc DUMBserve.c -o DUMBserve -g
+client :
+	gcc DUMBclient.c -o DUMBclient -g
 clean:
-        rm DUMBserver.c DUMBclient.c
+	rm DUMBserve DUMBclient
