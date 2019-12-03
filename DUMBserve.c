@@ -11,25 +11,29 @@
 void commands();
 void* handleConnection(void* soc);
 
+pthread_mutex_t lock;
+
+//Message box trying to be opened by 2 users is the extra credit i think!
+//enum commands{HELLO, GDBYE, CREAT, OPNBX, NXTMG, PUTMG, DELBX, CLSBX};
+
+typedef struct messages{
+  char* message;
+  char* next;
+}message;
+
+volatile message mailbox[];
+
+
 int main(int argc, char**argv){
   int port;
-  char help[] = {"help"};
-  if (argv[1] = help){ // helpful commands
-    printf("quit (which causes: E.1 GDBYE)\n");
-    printf("create (which causes: E.2 CREAT)\n");
-    printf("delete (which causes: E.6 DELBX)\n");
-    printf("open (which causes: E.3 OPNBX)\n");
-    printf("close	(which causes: E.7 CLSBX)\n");
-    printf("next (which causes: E.4 NXTMG)\n");
-    printf("put	(which causes: E.5 PUTMG)\n");
-  }
   //check args
   if(argc == 2){
-
-    if(port >= 4000){ // making sure port is always greater than 4k
     port = atoi(argv[1]);
+    if(port >= 4000){ // making sure port is always greater than 4k
+      perror("Port Error: port too small");
+      exit(EXIT_FAILURE);
+    }
   }
-}
   else{
     printf("Port undefined or smaller than 4000\n");
     exit(EXIT_FAILURE);
@@ -67,20 +71,14 @@ int main(int argc, char**argv){
       perror("Accept Failed");
       exit(EXIT_FAILURE);
     }
+
     pthread_t thread;
     pthread_create(&thread, NULL, handleConnection, (void*)&sock);
     printf("\rConnected Handling Connection...%d\n",sock);
   }
 }
-void commands(){
-  char hello[] = "HELLO";
-  char gdbye[] = "GDBYE";
-  char creat[] = "CREAT";
-  char opnbx[] = "OPNBX";
-  char nxtmg[] = "NXTMG";
-  char putmg[] = "PUTMG";
-  char  delbx[] = "DELBX";
-  char clsbx[] = "CLSBX";
+int commands(char command[6]){
+
 }
 
 void* handleConnection(void* soc){
@@ -90,16 +88,60 @@ void* handleConnection(void* soc){
 
   read(sock,buffer, 1024);
 
-  char *test;
-  if(strcmp("test",buffer) == 0){
-    test = "gotTest";
-  }
-  else{
-    test = buffer;
+  if(strcmp("HELLO", command, 6)){
+
+  } else if(strcmp("GDBYE", command, 6){
+
+  } else if(strcmp("CREAT", command, 6){
+
+  } else if(strcmp("OPNBX", command, 6){
+
+  } else if(strcmp("NXTMG", command, 6){
+
+  } else if(strcmp("PUTMG", command, 6){
+
+  } else if(strcmp("DELBX", command, 6){
+
+  } else if(strcmp("CLSBX", command, 6){
+    
+  } else{
+    return -1;
   }
 
-  send(sock, test, strlen(test),0);
+  //send(sock, test, strlen(test),0);
 
   return NULL;
+
+}
+//functions to handle hello command
+int hello(int soc){
+
+}
+
+int gdbye(int soc){
+
+}
+
+int creat(int soc, char* name){
+
+}
+
+int opnbx(int soc, char* name){
+
+}
+
+message nxtmg(int soc, message currentmessage){
+
+}
+
+int putmg(int soc, int boxIndex, int size, char* message){
+
+}
+
+int delbx(int soc, char* name){
+
+}
+
+int clsbx(int soc, char* name){
 
 }
