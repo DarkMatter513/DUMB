@@ -8,7 +8,7 @@
 #include <pthread.h>
 #define NUM_CONNECTIONS 20
 
-void commands();
+
 void* handleConnection(void* soc);
 
 pthread_mutex_t lock;
@@ -77,9 +77,7 @@ int main(int argc, char**argv){
     printf("\rConnected Handling Connection...%d\n",sock);
   }
 }
-int commands(char command[6]){
 
-}
 
 void* handleConnection(void* soc){
   int sock = *((int*)soc);
@@ -88,22 +86,22 @@ void* handleConnection(void* soc){
 
   read(sock,buffer, 1024);
 
-  if(strcmp("HELLO", command, 6)){
+  if(strncmp("HELLO", command, 6)){
 
-  } else if(strcmp("GDBYE", command, 6){
+  } else if(strncmp("GDBYE", command, 6){
 
-  } else if(strcmp("CREAT", command, 6){
+  } else if(strncmp("CREAT", command, 6){
 
-  } else if(strcmp("OPNBX", command, 6){
+  } else if(strncmp("OPNBX", command, 6){
 
-  } else if(strcmp("NXTMG", command, 6){
+  } else if(strncmp("NXTMG", command, 6){
 
-  } else if(strcmp("PUTMG", command, 6){
+  } else if(strncmp("PUTMG", command, 6){
 
-  } else if(strcmp("DELBX", command, 6){
+  } else if(strncmp("DELBX", command, 6){
 
-  } else if(strcmp("CLSBX", command, 6){
-    
+  } else if(strncmp("CLSBX", command, 6){
+
   } else{
     return -1;
   }
@@ -116,6 +114,7 @@ void* handleConnection(void* soc){
 //functions to handle hello command
 int hello(int soc){
 
+}
 }
 
 int gdbye(int soc){
