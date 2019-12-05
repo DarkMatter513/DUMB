@@ -14,6 +14,12 @@ void* handleConnection(void* soc);
 void printaction(int sock, char* action);
 void printerror(int sock, char* action);
 void printdata();
+int hello(int soc);
+int gdbye(int soc);
+int creat(int soc, char* name);
+struct messagebox* opnbx(int soc, char* name);
+int nxtmg(int soc, struct messagebox* currentbox);
+int putmg(int soc, struct messagebox* currentbox, int length, char* mess);
 pthread_mutex_t lock;
 
 //Message box trying to be opened by 2 users is the extra credit i think!
@@ -21,17 +27,20 @@ pthread_mutex_t lock;
 
 typedef struct messages{
   char* message;
+  int length;
   struct messages* next;
 }message;
 
 typedef struct messagebox{
   char* name;
   message* messages;
+  int isFree;
   struct messagebox* next;
 }messagebox;
 
 
 messagebox* first;
+char ok[] = "OK!";
 
 int main(int argc, char**argv){
   int port;
@@ -96,35 +105,42 @@ void* handleConnection(void* soc){
 
   char buffer[1024] = {0};
 
-  read(sock,buffer, 1024);
+  messagebox* currentopenbox;
 
-  if(strncmp("HELLO", buffer, 5) == 0){
-    hello(sock);
-  } else if(strncmp("GDBYE", buffer, 5) == 0){
-    gdbye(sock);
-  } else if(strncmp("CREAT", buffer, 5) == 0){
-    char* token = strtok(buffer, " ");
-    char* name = strtok(NULL, " ");
-    creat(sock, name);
-    printdata();
+  while(1){
+    printf("Reading\n"); read(sock,buffer, 1024);
+    if(strncmp("HELLO", buffer, 5) == 0){
+      hello(sock);
+    } else if(strncmp("GDBYE", buffer, 5) == 0){
+      gdbye(sock);
+    } else if(strncmp("CREAT", buffer, 5) == 0){
+      char* token = strtok(buffer, " ");
+      char* name = strtok(NULL, " ");
+      creat(sock, name);
+      printdata();
 
-  } else if(strncmp("OPNBX", buffer, 5) == 0){
+    } else if(strncmp("OPNBX", buffer, 5) == 0){
+      char* token = strtok(buffer, " ");
+      char* name = strtok(NULL, " ");
+      currentopenbox = opnbx(sock, name);
 
-  } else if(strncmp("NXTMG", buffer, 5) == 0){
+    } else if(strncmp("NXTMG", buffer, 5) == 0){
 
-  } else if(strncmp("PUTMG", buffer, 5) == 0){
+    } else if(strncmp("PUTMG", buffer, 5) == 0){
 
-  } else if(strncmp("DELBX", buffer, 5) == 0){
+    } else if(strncmp("DELBX", buffer, 5) == 0){
 
-  } else if(strncmp("CLSBX", buffer, 5) == 0){
+    } else if(strncmp("CLSBX", buffer, 5) == 0){
 
-  } else{
-    char what[] = "What?";
-    send(sock, what, strlen(what),0);
-    return NULL;
+    } else{
+      char what[] = "What?";
+      printf("Sending\n"); send(sock, what, strlen(what),0);
+      return NULL;
+    }
+    memset(buffer, '\0', sizeof(buffer));
   }
 
-  //send(sock, test, strlen(test),0);
+  //printf("Sending\n"); send(sock, test, strlen(test),0);
 
   return NULL;
 
@@ -133,7 +149,7 @@ void* handleConnection(void* soc){
 int hello(int soc){
   char hello[] = "HELLO DUMBv0 ready!";
   printaction(soc, "HELLO");
-  send(soc, hello, strlen(hello),0);
+  printf("Sending\n"); send(soc, hello, strlen(hello),0);
   return 1;
 }
 
@@ -145,28 +161,31 @@ int gdbye(int soc){
 }
 
 int creat(int soc, char* name){
-  send(soc, "toend", strlen("toend"), 0);
   messagebox* current = first;
+  if(current->name == NULL){
+    current->name = name;
+    current->messages = NULL;
+    current->isFree = 1;
+    current->next = NULL;
+    printaction(soc,"CREAT");
+    printf("Sending\n"); send(soc, ok, strlen(ok), 0);
+    return 1;
+  }
   while(current != NULL){
-    if(current->name == NULL){
-      current->name = name;
-      char ok[] = "OK!";
-      printaction(soc,"CREAT");
-      send(soc, ok, strlen(ok), 0);
-      return 1;
-    }
     if(strcmp(name, current->name) == 0){
-      char exists[] = "ER:EXISTS";
-      printerror(soc, exists);
-      send(soc, exists, strlen(exists), 0);
+      char err[] = "ER:EXISTS";
+      printerror(soc, err);
+      printf("Sending\n"); send(soc, err, strlen(err), 0);
       return -1;
     }
     if(current->next == NULL){
       current->next = (messagebox*) malloc(sizeof(messagebox));
       current->next->name = name;
-      char ok[] = "OK!";
+      current->next->messages = NULL;
+      current->next->isFree = 1;
+      current->next->next = NULL;
       printaction(soc,"CREAT");
-      send(soc, ok, strlen(ok), 0);
+      printf("Sending\n"); send(soc, ok, strlen(ok), 0);
       return 1;
     }
     current = current->next;
@@ -174,16 +193,84 @@ int creat(int soc, char* name){
 
 }
 
-int opnbx(int soc, char* name){
+struct messagebox* opnbx(int soc, char* name){
+
+  messagebox* current = first;
+  if(current->name == NULL){
+    printerror(soc, "OPNBX");
+    char err[] = "ER:NEXST";
+    printf("Sending\n"); send(soc, err,strlen(err),0);
+    return NULL;
+  }
+  while(current != NULL){
+    if(strcmp(name, current->name) == 0){
+      if(current->isFree){
+        printaction(soc, "OPNBX");
+        printf("Sending\n"); send(soc, ok, strlen(ok), 0);
+        return current;
+      }
+      else{
+        printerror(soc, "OPNBX");
+        char act[] = "ER:OPEND";
+        printf("Sending\n"); send(soc, act,strlen(act),0);
+        return NULL;
+      }
+    }
+    if(current->next == NULL){
+      printerror(soc, "OPNBX");
+      char err[] = "ER:NEXST";
+      printf("Sending\n"); send(soc, err,strlen(err),0);
+      return NULL;
+    }
+    current = current->next;
+  }
 
 }
 
-message nxtmg(int soc, message currentmessage){
+int nxtmg(int soc, struct messagebox* currentbox){
+
+  if(currentbox->messages != NULL){
+    message* currentmessage = currentbox->messages;
+    char* data = currentmessage->message;
+    int len = currentmessage->length;
+    currentbox->messages = currentmessage->next;
+    free(currentmessage);
+    char buff[1024] ="OK!";
+    char _len[100];
+    snprintf(_len,100,"%d!",len);
+    strcat(buff,_len);
+    strcat(buff,data);
+    printaction(soc, "NXTMG");
+    printf("Sending\n"); send(soc, buff, strlen(buff),0);
+  } else{
+    char empty[] = "ER:EMPTY";
+    printerror(soc, empty);
+    printf("Sending\n"); send(soc, empty, strlen(empty), 0);
+    return -1;
+  }
 
 }
 
-int putmg(int soc, int boxIndex, int size, char* message){
+int putmg(int soc, struct messagebox* currentbox, int length, char* mess){
 
+  message* currentmessage = currentbox->messages;
+  if(currentmessage = NULL){
+    message* newmsg = (message*)malloc(sizeof(message));
+    newmsg->message = mess;
+    newmsg->length = length;
+    newmsg->next = NULL;
+    currentbox->messages = newmsg;
+    return 1;
+  }
+  while(currentmessage->next != NULL){
+    currentmessage = currentmessage->next;
+  }
+  message* newmsg = (message*)malloc(sizeof(message));
+  newmsg->message = mess;
+  newmsg->length = length;
+  newmsg->next = NULL;
+  currentmessage->next = newmsg;
+  return 1;
 }
 
 int delbx(int soc, char* name){
@@ -193,6 +280,14 @@ int delbx(int soc, char* name){
 int clsbx(int soc, char* name){
 
 }
+
+
+
+
+
+
+
+
 
 void printtime(){
   time_t timeinsec = time(NULL);
@@ -306,6 +401,7 @@ void printerror(int sock, char* action){
   snprintf(str, 1024, "%s\n", action);
   perror(str);
 }
+
 void printdata(){
   printf("ALL DATA STORED:\n\n");
   messagebox* currentbox = first;
