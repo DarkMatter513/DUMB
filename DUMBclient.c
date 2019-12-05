@@ -23,12 +23,48 @@ int main(int argc, char** argv){
     return -1;
   }
   int sock = con();
-  char test[] = "test";
-  send(sock, test, strlen(test),0);
 
   char buffer[1024] = {0};
-  read(sock,buffer, 1024);
-  printf("%s\n",buffer);
+
+  while(1){
+    scanf("%s",buffer);
+
+    if(strncmp("quit", buffer, 5) == 0){
+
+    } else if(strncmp("create", buffer, 7) == 0){
+
+      printf("Okay, enter the new box's name:\n");
+      scanf("%s",buffer);
+      char command[] = "CREAT ";
+      strcat(command, buffer);
+      printf(command);
+      printf("\n");
+      send(sock, command, strlen(command), 0);
+      memset(buffer, '\0', sizeof(buffer));
+      read(sock,buffer, 1024);
+      printf("%s\n",buffer);
+    } else if(strncmp("delete", buffer, 7) == 0){
+
+    } else if(strncmp("open", buffer, 5) == 0){
+
+    } else if(strncmp("close", buffer, 6) == 0){
+
+    } else if(strncmp("next", buffer, 5) == 0){
+
+    } else if(strncmp("put", buffer, 4) == 0){
+
+    } else if(strncmp("HELLO", buffer, 6) == 0){
+
+    } else{
+      char what[] = "What?";
+      send(sock, what, strlen(what),0);
+      return -1;
+    }
+
+  }
+  //send(sock, test, strlen(test),0);
+
+
 
 }
 
