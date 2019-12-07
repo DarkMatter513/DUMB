@@ -20,9 +20,10 @@ int creat(int soc, char* name);
 struct messagebox* opnbx(int soc, char* name);
 int nxtmg(int soc, struct messagebox* currentbox);
 int putmg(int soc, struct messagebox* currentbox, int length, char* mess);
-pthread_mutex_t lock;
+int delbx(int soc, char* name);
+struct messagebox* clsbx(int soc, char* name, struct messagebox* open);
 
-//Message box trying to be opened by 2 users is the extra credit i think!
+//Extra Credit is trying to open 2 boxes at once ADDED "ER:NOCLS" error!
 //enum commands{HELLO, GDBYE, CREAT, OPNBX, NXTMG, PUTMG, DELBX, CLSBX};
 
 typedef struct messages{
@@ -34,7 +35,7 @@ typedef struct messages{
 typedef struct messagebox{
   char* name;
   message* messages;
-  int isFree;
+  pthread_mutex_t lock;
   struct messagebox* next;
 }messagebox;
 
@@ -87,7 +88,6 @@ int main(int argc, char**argv){
   //keep looking for new connections
   while(true){
     //printf("\nwaiting for connection...");
-    fflush(stdout);
     if((sock = accept(soc, (struct sockaddr *)&addr, (socklen_t*)&addrlen)) < 0){
       perror("Accept Failed");
       exit(EXIT_FAILURE);
@@ -105,10 +105,10 @@ void* handleConnection(void* soc){
 
   char buffer[1024] = {0};
 
-  messagebox* currentopenbox;
+  messagebox* currentopenbox = NULL;
 
   while(1){
-    printf("Reading\n"); read(sock,buffer, 1024);
+    read(sock,buffer, 1024);
     if(strncmp("HELLO", buffer, 5) == 0){
       hello(sock);
     } else if(strncmp("GDBYE", buffer, 5) == 0){
@@ -117,30 +117,46 @@ void* handleConnection(void* soc){
       char* token = strtok(buffer, " ");
       char* name = strtok(NULL, " ");
       creat(sock, name);
-      printdata();
 
     } else if(strncmp("OPNBX", buffer, 5) == 0){
       char* token = strtok(buffer, " ");
       char* name = strtok(NULL, " ");
+      if(currentopenbox != NULL){
+        char err[] = "ER:NOCLS";
+        printerror(sock, err);
+        send(sock, err, strlen(err), 0);
+      }
       currentopenbox = opnbx(sock, name);
 
     } else if(strncmp("NXTMG", buffer, 5) == 0){
 
+      nxtmg(sock,currentopenbox);
+
     } else if(strncmp("PUTMG", buffer, 5) == 0){
-
+      char* token = strtok(buffer,"!");
+      int length = atoi(strtok(NULL,"!"));
+      char* newmsg = strtok(NULL,"!");
+      putmg(sock, currentopenbox, length, newmsg);
     } else if(strncmp("DELBX", buffer, 5) == 0){
-
+      char* token = strtok(buffer, " ");
+      char* name = strtok(NULL, " ");
+      delbx(sock, name);
     } else if(strncmp("CLSBX", buffer, 5) == 0){
+
+      char* token = strtok(buffer, " ");
+      char* name = strtok(NULL, " ");
+      currentopenbox = clsbx(sock, name,currentopenbox);
 
     } else{
       char what[] = "What?";
-      printf("Sending\n"); send(sock, what, strlen(what),0);
+      send(sock, what, strlen(what),0);
       return NULL;
     }
+    printdata();
     memset(buffer, '\0', sizeof(buffer));
   }
 
-  //printf("Sending\n"); send(sock, test, strlen(test),0);
+  //send(sock, test, strlen(test),0);
 
   return NULL;
 
@@ -149,7 +165,7 @@ void* handleConnection(void* soc){
 int hello(int soc){
   char hello[] = "HELLO DUMBv0 ready!";
   printaction(soc, "HELLO");
-  printf("Sending\n"); send(soc, hello, strlen(hello),0);
+  send(soc, hello, strlen(hello),0);
   return 1;
 }
 
@@ -163,29 +179,31 @@ int gdbye(int soc){
 int creat(int soc, char* name){
   messagebox* current = first;
   if(current->name == NULL){
-    current->name = name;
+    current->name = (char*)malloc(sizeof(name));
+    strncpy(current->name, name, strlen(name));
     current->messages = NULL;
-    current->isFree = 1;
+    pthread_mutex_init(&(current->lock),NULL);
     current->next = NULL;
     printaction(soc,"CREAT");
-    printf("Sending\n"); send(soc, ok, strlen(ok), 0);
+    send(soc, ok, strlen(ok), 0);
     return 1;
   }
   while(current != NULL){
     if(strcmp(name, current->name) == 0){
       char err[] = "ER:EXISTS";
       printerror(soc, err);
-      printf("Sending\n"); send(soc, err, strlen(err), 0);
+      send(soc, err, strlen(err), 0);
       return -1;
     }
     if(current->next == NULL){
       current->next = (messagebox*) malloc(sizeof(messagebox));
-      current->next->name = name;
+      current->next->name = (char*)malloc(sizeof(name));
+      strncpy(current->next->name,name, strlen(name));
       current->next->messages = NULL;
-      current->next->isFree = 1;
+      pthread_mutex_init(&(current->lock),NULL);
       current->next->next = NULL;
       printaction(soc,"CREAT");
-      printf("Sending\n"); send(soc, ok, strlen(ok), 0);
+      send(soc, ok, strlen(ok), 0);
       return 1;
     }
     current = current->next;
@@ -199,27 +217,27 @@ struct messagebox* opnbx(int soc, char* name){
   if(current->name == NULL){
     printerror(soc, "OPNBX");
     char err[] = "ER:NEXST";
-    printf("Sending\n"); send(soc, err,strlen(err),0);
+    send(soc, err,strlen(err),0);
     return NULL;
   }
   while(current != NULL){
     if(strcmp(name, current->name) == 0){
-      if(current->isFree){
+      if(pthread_mutex_trylock(&(current->lock)) == 0){
         printaction(soc, "OPNBX");
-        printf("Sending\n"); send(soc, ok, strlen(ok), 0);
+        send(soc, ok, strlen(ok), 0);
         return current;
       }
       else{
         printerror(soc, "OPNBX");
         char act[] = "ER:OPEND";
-        printf("Sending\n"); send(soc, act,strlen(act),0);
+        send(soc, act,strlen(act),0);
         return NULL;
       }
     }
     if(current->next == NULL){
       printerror(soc, "OPNBX");
       char err[] = "ER:NEXST";
-      printf("Sending\n"); send(soc, err,strlen(err),0);
+      send(soc, err,strlen(err),0);
       return NULL;
     }
     current = current->next;
@@ -234,18 +252,20 @@ int nxtmg(int soc, struct messagebox* currentbox){
     char* data = currentmessage->message;
     int len = currentmessage->length;
     currentbox->messages = currentmessage->next;
-    free(currentmessage);
     char buff[1024] ="OK!";
     char _len[100];
     snprintf(_len,100,"%d!",len);
     strcat(buff,_len);
     strcat(buff,data);
     printaction(soc, "NXTMG");
-    printf("Sending\n"); send(soc, buff, strlen(buff),0);
+    send(soc, buff, strlen(buff),0);
+    currentbox->messages = currentmessage->next;
+    free(currentmessage);
+    return 1;
   } else{
     char empty[] = "ER:EMPTY";
     printerror(soc, empty);
-    printf("Sending\n"); send(soc, empty, strlen(empty), 0);
+    send(soc, empty, strlen(empty), 0);
     return -1;
   }
 
@@ -253,31 +273,88 @@ int nxtmg(int soc, struct messagebox* currentbox){
 
 int putmg(int soc, struct messagebox* currentbox, int length, char* mess){
 
+  if(currentbox == NULL){
+    char err[] = "ER:NOOPN";
+    printerror(soc, err);
+    send(soc, err, strlen(err), 0);
+    return -1;
+  }
   message* currentmessage = currentbox->messages;
-  if(currentmessage = NULL){
+  if(currentmessage == NULL){
     message* newmsg = (message*)malloc(sizeof(message));
-    newmsg->message = mess;
+    newmsg->message = (char*) malloc(sizeof(mess));
+    strcpy(newmsg->message,mess);
     newmsg->length = length;
     newmsg->next = NULL;
     currentbox->messages = newmsg;
+    printaction(soc, "PUTMG");
+    send(soc, ok, strlen(ok), 0);
     return 1;
   }
   while(currentmessage->next != NULL){
     currentmessage = currentmessage->next;
   }
   message* newmsg = (message*)malloc(sizeof(message));
-  newmsg->message = mess;
+  newmsg->message = (char*) malloc(sizeof(mess));
+  strcpy(newmsg->message,mess);
   newmsg->length = length;
   newmsg->next = NULL;
   currentmessage->next = newmsg;
+  printaction(soc, "PUTMG");
+  send(soc, ok, strlen(ok), 0);
   return 1;
 }
 
 int delbx(int soc, char* name){
 
+  messagebox* current = first;
+  messagebox* prev = NULL;
+  if(current->name == NULL){
+    char err[] = "ER:NEXST";
+    printerror(soc, err);
+    send(soc, err, strlen(err), 0);
+    return -1;
+  }
+  while(current != NULL){
+    if(strcmp(name, current->name) == 0 && pthread_mutex_trylock(&(current->lock)) == 0){
+      if(current->messages != NULL){
+        char err[] = "ER:NOTMT";
+        printerror(soc, err);
+        send(soc, err, strlen(err), 0);
+        return -1;
+      }
+      prev->next = current->next;
+      pthread_mutex_destroy(&(current->lock));
+      free(current);
+      printaction(soc, "DELBX");
+      send(soc, ok, strlen(ok),0);
+      return 1;
+    }
+    if(current->next == NULL){
+      char err[] = "ER:NEXST";
+      printerror(soc, err);
+      send(soc, err, strlen(err), 0);
+      return -1;
+    }
+    prev = current;
+    current = current->next;
+  }
+
 }
 
-int clsbx(int soc, char* name){
+struct messagebox* clsbx(int soc, char* name, struct messagebox* open){
+
+  if(open != NULL && strcmp(name, open->name) != 0){
+    char err[] = "ER:NOOPN";
+    printerror(soc, err);
+    send(soc, err, strlen(err), 0);
+    return open;
+
+  } else if(pthread_mutex_unlock(&(open->lock)) == 0){
+    printaction(soc, "CLSBX");
+    send(soc, ok, strlen(ok),0);
+    return NULL;
+  }
 
 }
 
@@ -312,9 +389,10 @@ void printtime(){
   int mtime = (t.tm_hour*100) + (t.tm_min);
 
   printf("%d %d %s ", mtime, day, mon);
+  fflush(stdout);
 }
 
-void perrortime(){
+char* perrortime(){
   time_t timeinsec = time(NULL);
   struct tm t;
   localtime_r(&timeinsec, &t);
@@ -335,9 +413,9 @@ void perrortime(){
     case 11: mon = "Dec";
   }
   int mtime = (t.tm_hour*100) + (t.tm_min);
-  char str[1024];
+  char* str =(char*)malloc(1024);
   snprintf(str,1024,"%d %d %s ", mtime, day, mon);
-  perror(str);
+  return str;
 }
 
 void printaddress(int s){
@@ -362,9 +440,10 @@ void printaddress(int s){
   }
 
   printf("%s ", ipstr);
+  fflush(stdout);
 }
 
-void perroraddress(int s){
+char* perroraddress(int s){
   socklen_t len;
   struct sockaddr_storage addr;
   char ipstr[INET6_ADDRSTRLEN];
@@ -383,23 +462,28 @@ void perroraddress(int s){
     port = ntohs(s->sin6_port);
     inet_ntop(AF_INET6, &s->sin6_addr, ipstr, sizeof ipstr);
   }
-  char str[1024];
+  char* str =(char*)malloc(1024);
   snprintf(str,1024,"%s ", ipstr);
-  perror(str);
+  return str;
 }
 
 void printaction(int sock, char* action){
   printtime();
   printaddress(sock);
   printf("%s\n", action);
+  fflush(stdout);
 }
 
 void printerror(int sock, char* action){
-  perrortime();
-  perroraddress(sock);
+  char* t = perrortime();
+  char* addr = perroraddress(sock);
   char str[1024];
-  snprintf(str, 1024, "%s\n", action);
-  perror(str);
+  snprintf(str, 1024, "%s", action);
+  strcat(t,addr);
+  strcat(t,str);
+  perror(t);
+  free(t);
+  free(addr);
 }
 
 void printdata(){
@@ -414,4 +498,5 @@ void printdata(){
     }
     currentbox = currentbox->next;
   }
+  fflush(stdout);
 }
