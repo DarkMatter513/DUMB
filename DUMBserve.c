@@ -7,6 +7,7 @@
 #include <stdbool.h>
 #include <pthread.h>
 #include <time.h>
+#include <ctype.h>
 #define NUM_CONNECTIONS 20
 
 
@@ -108,52 +109,60 @@ void* handleConnection(void* soc){
   messagebox* currentopenbox = NULL;
 
   while(1){
+    memset(buffer, '\0', sizeof(buffer));
     read(sock,buffer, 1024);
-    if(strncmp("HELLO", buffer, 5) == 0){
+    char buffCopy[1024];
+    strcpy(buffCopy, buffer);
+    printf("FULL BUFFER:\n%s\n\n\n", buffer);
+    if(strlen(buffCopy) == 5 && strncmp("HELLO", buffer, 5) == 0){
       hello(sock);
-    } else if(strncmp("GDBYE", buffer, 5) == 0){
+    } else if(strlen(buffCopy) == 5 && strncmp("GDBYE", buffer, 5) == 0){
       gdbye(sock);
-    } else if(strncmp("CREAT", buffer, 5) == 0){
+    } else if(strlen(strtok(buffCopy," ")) == 5 && strncmp("CREAT", buffer, 5) == 0){
       char* token = strtok(buffer, " ");
       char* name = strtok(NULL, " ");
-      creat(sock, name);
+      if(strlen(name) >= 5 && strlen(name) <= 25 && isalpha(name[0])){
+          creat(sock, name);
+      } else{
+        char what[] = "ER:WHAT?";
+        send(sock, what, strlen(what),0);
+      }
 
-    } else if(strncmp("OPNBX", buffer, 5) == 0){
+    } else if(strlen(strtok(buffCopy," ")) == 5 && strncmp("OPNBX", buffer, 5) == 0){
       char* token = strtok(buffer, " ");
       char* name = strtok(NULL, " ");
       if(currentopenbox != NULL){
         char err[] = "ER:NOCLS";
         printerror(sock, err);
         send(sock, err, strlen(err), 0);
+      } else{
+        currentopenbox = opnbx(sock, name);
       }
-      currentopenbox = opnbx(sock, name);
 
-    } else if(strncmp("NXTMG", buffer, 5) == 0){
+    } else if(strlen(buffCopy) == 5 && strncmp("NXTMG", buffer, 5) == 0){
 
       nxtmg(sock,currentopenbox);
 
-    } else if(strncmp("PUTMG", buffer, 5) == 0){
+    } else if(strlen(strtok(buffCopy,"!")) == 5 && strncmp("PUTMG", buffer, 5) == 0){
       char* token = strtok(buffer,"!");
       int length = atoi(strtok(NULL,"!"));
       char* newmsg = strtok(NULL,"!");
       putmg(sock, currentopenbox, length, newmsg);
-    } else if(strncmp("DELBX", buffer, 5) == 0){
+    } else if(strlen(strtok(buffCopy," ")) == 5 && strncmp("DELBX", buffer, 5) == 0){
       char* token = strtok(buffer, " ");
       char* name = strtok(NULL, " ");
       delbx(sock, name);
-    } else if(strncmp("CLSBX", buffer, 5) == 0){
+    } else if(strlen(strtok(buffCopy," ")) == 5 && strncmp("CLSBX", buffer, 5) == 0){
 
       char* token = strtok(buffer, " ");
       char* name = strtok(NULL, " ");
       currentopenbox = clsbx(sock, name,currentopenbox);
 
     } else{
-      char what[] = "What?";
+      char what[] = "ER:WHAT?";
       send(sock, what, strlen(what),0);
-      return NULL;
     }
     printdata();
-    memset(buffer, '\0', sizeof(buffer));
   }
 
   //send(sock, test, strlen(test),0);
@@ -171,7 +180,8 @@ int hello(int soc){
 
 int gdbye(int soc){
   printaction(soc, "GDBYE");
-  while(shutdown(soc, 2) != 0);
+  send(soc, ok, strlen(ok), 0);
+  while(close(soc) != 0);
   printaction(soc, "disconnected");
   return 1;
 }
@@ -316,19 +326,34 @@ int delbx(int soc, char* name){
     return -1;
   }
   while(current != NULL){
-    if(strcmp(name, current->name) == 0 && pthread_mutex_trylock(&(current->lock)) == 0){
-      if(current->messages != NULL){
-        char err[] = "ER:NOTMT";
-        printerror(soc, err);
-        send(soc, err, strlen(err), 0);
+    if(strcmp(name, current->name) == 0){
+      if(pthread_mutex_trylock(&(current->lock)) == 0){
+        if(current->messages != NULL){
+          char err[] = "ER:NOTMT";
+          printerror(soc, err);
+          send(soc, err, strlen(err), 0);
+          return -1;
+        }
+        if(prev == NULL){
+          if(current->next == NULL){
+            first = (messagebox*) malloc(sizeof(messagebox));
+          } else{
+            first = current->next;
+          }
+        }else{
+          prev->next = current->next;
+        }
+        pthread_mutex_destroy(&(current->lock));
+        free(current);
+        printaction(soc, "DELBX");
+        send(soc, ok, strlen(ok),0);
+        return 1;
+      } else{
+        printerror(soc, "OPNBX");
+        char act[] = "ER:OPEND";
+        send(soc, act,strlen(act),0);
         return -1;
       }
-      prev->next = current->next;
-      pthread_mutex_destroy(&(current->lock));
-      free(current);
-      printaction(soc, "DELBX");
-      send(soc, ok, strlen(ok),0);
-      return 1;
     }
     if(current->next == NULL){
       char err[] = "ER:NEXST";

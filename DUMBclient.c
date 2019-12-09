@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netdb.h>
@@ -48,21 +49,21 @@ int main(int argc, char** argv){
     printf("> ");
     fgets(buffer, 1024, stdin);
     buffer[strcspn(buffer, "\n")] = 0;
-    if(strncmp("quit", buffer, 4) == 0){
+    if(strlen(buffer) == 4 && strncmp("quit", buffer, 4) == 0){
       quit();
-    } else if(strncmp("create", buffer, 6) == 0){
+    } else if(strlen(buffer) == 6 && strncmp("create", buffer, 6) == 0){
       create();
-    } else if(strncmp("delete", buffer, 6) == 0){
+    } else if(strlen(buffer) == 6 && strncmp("delete", buffer, 6) == 0){
       delete();
-    } else if(strncmp("open", buffer, 4) == 0){
+    } else if(strlen(buffer) == 4 && strncmp("open", buffer, 4) == 0){
       open();
-    } else if(strncmp("close", buffer, 5) == 0){
+    } else if(strlen(buffer) == 5 && strncmp("close", buffer, 5) == 0){
       closebx();
-    } else if(strncmp("next", buffer, 4) == 0){
+    } else if(strlen(buffer) == 4 && strncmp("next", buffer, 4) == 0){
       next();
-    } else if(strncmp("put", buffer, 3) == 0){
+    } else if(strlen(buffer) == 3 && strncmp("put", buffer, 3) == 0){
       put();
-    } else if(strncmp("help", buffer, 4) == 0){
+    } else if(strlen(buffer) == 4 && strncmp("help", buffer, 4) == 0){
       printf("The following commads are valid:\nquit\ncreate\ndelete\nopen\nclose\nnext\nput\n");
     }
     else{
@@ -73,6 +74,173 @@ int main(int argc, char** argv){
 
 
 }
+
+//"ER:EXISTS","ER:NEXST","ER:OPEND","ER:EMPTY","ER:NOOPN","ER:NOTMT"
+int hello(){
+  char command[] = "HELLO";
+  send(sock, command, strlen(command), 0);
+  memset(buffer, '\0', sizeof(buffer));
+  read(sock,buffer, 1024);
+  if(strcmp(buffer,"HELLO DUMBv0 ready!") == 0){
+    printf("%s\n",buffer);
+  } else{
+    printf("Error: incorrect reply from Server!");
+    exit(1);
+  }
+}
+void quit(){
+  char command[] = "GDBYE";
+  send(sock, command, strlen(command), 0);
+  memset(buffer, '\0', sizeof(buffer));
+  read(sock,buffer, 1024);
+  if(strcmp("OK!",buffer) == 0){
+    printf("Goodbye!\n");
+    exit(1);
+  } else{
+    report();
+  }
+}
+void create(){
+  printf("Okay, enter the new box's name:\n");
+  memset(buffer, '\0', sizeof(buffer));
+  printf("create:> ");
+  fgets(buffer, 1024, stdin);
+  buffer[strcspn(buffer, "\n")] = 0;
+  char boxname[1024];
+  strcpy(boxname,buffer);
+  char command[] = "CREAT ";
+  strcat(command, buffer);
+  //printf(command);
+  //printf("\n");
+  send(sock, command, strlen(command), 0);
+  memset(buffer, '\0', sizeof(buffer));
+  read(sock,buffer, 1024);
+  if(strcmp("OK!",buffer) == 0 && boxname != NULL){
+    printf("Success! %s Box created!\n",boxname);
+  } else{
+    report(boxname);
+  }
+}
+void delete(){
+  printf("Okay, delete which message box?\n");
+  memset(buffer, '\0', sizeof(buffer));
+  printf("delete:> ");
+  fgets(buffer, 1024, stdin);
+  buffer[strcspn(buffer, "\n")] = 0;
+  char boxname[1024];
+  strcpy(boxname,buffer);
+  char command[] = "DELBX ";
+  strcat(command, buffer);
+  send(sock, command, strlen(command), 0);
+  memset(buffer, '\0', sizeof(buffer));
+  read(sock,buffer, 1024);
+  if(strcmp("OK!",buffer) == 0 && boxname != NULL){
+    printf("Success! %s Box deleted!\n",boxname);
+  } else{
+    report(boxname);
+  }
+
+}
+void open(){
+  printf("Okay, open which message box?\n");
+  memset(buffer, '\0', sizeof(buffer));
+  printf("open:> ");
+  fgets(buffer, 1024, stdin);
+  buffer[strcspn(buffer, "\n")] = 0;
+  char boxname[1024];
+  strcpy(boxname,buffer);
+  char command[] = "OPNBX ";
+  strcat(command, buffer);
+  send(sock, command, strlen(command), 0);
+  memset(buffer, '\0', sizeof(buffer));
+  read(sock,buffer, 1024);
+  if(strcmp("OK!",buffer) == 0 && boxname != NULL){
+    printf("Success! %s Box opened!\n",boxname);
+  } else{
+    report(boxname);
+  }
+}
+void closebx(){
+  printf("Okay, close which message box?\n");
+  memset(buffer, '\0', sizeof(buffer));
+  printf("close:> ");
+  fgets(buffer, 1024, stdin);
+  buffer[strcspn(buffer, "\n")] = 0;
+  char boxname[1024];
+  strcpy(boxname,buffer);
+  char command[] = "CLSBX ";
+  strcat(command, buffer);
+  send(sock, command, strlen(command), 0);
+  memset(buffer, '\0', sizeof(buffer));
+  read(sock,buffer, 1024);
+  if(strcmp("OK!",buffer) == 0 && boxname != NULL){
+    printf("Success! %s Box closed!\n",boxname);
+  } else{
+    report(boxname);
+  }
+}
+void next(){
+  char command[] = "NXTMG";
+  send(sock, command, strlen(command), 0);
+  memset(buffer, '\0', sizeof(buffer));
+  read(sock,buffer, 1024);
+  if(strncmp("OK!",buffer,3) == 0){
+    char* token = strtok(buffer, "!");
+    int length = atoi(strtok(NULL, "!"));
+    char* m = strtok(NULL, "!");
+    printf(m);
+    printf("\n");
+  } else{
+    report(NULL);
+  }
+}
+void put(){
+  printf("Okay, please enter a message?\n");
+  memset(buffer, '\0', sizeof(buffer));
+  printf("put:> ");
+  fgets(buffer, 1024, stdin);
+  buffer[strcspn(buffer, "\n")] = 0;
+  char command[] = "PUTMG!";
+  int length = strlen(buffer);
+  char _len[100];
+  snprintf(_len,100,"%d!",length);
+  strcat(command,_len);
+  strcat(command, buffer);
+
+  send(sock, command, strlen(command), 0);
+  memset(buffer, '\0', sizeof(buffer));
+  read(sock,buffer, 1024);
+  if(strcmp("OK!",buffer) == 0){
+    printf("Success! Message put in box!\n");
+  } else{
+    report(NULL);
+  }
+}
+//"ER:EXISTS","ER:NEXST","ER:OPEND","ER:EMPTY","ER:NOOPN","ER:NOTMT"
+void report(char* helper){
+  if(strcmp("ER:EXISTS",buffer)== 0 && helper != NULL){
+    printf("Error! %s Already Exists!\n",helper);
+  } else if(strcmp("ER:NEXST",buffer)== 0 && helper != NULL){
+    printf("Error! %s Does Not Exists!\n",helper);
+  } else if(strcmp("ER:OPEND",buffer)== 0 && helper != NULL){
+    printf("Error! %s is Opened by Another User!\n",helper);
+  } else if(strcmp("ER:EMPTY",buffer)== 0){
+    printf("Error! Message Box is Empty!\n");
+  } else if(strcmp("ER:NOOPN",buffer)== 0){
+    printf("Error! That Message Box is not Open!\n");
+  } else if(strcmp("ER:NOTMT",buffer)== 0 && helper != NULL){
+    printf("Error! %s is Not Empty!\n",helper);
+  } else if(strcmp("ER:NOCLS",buffer)== 0 && helper != NULL){
+    printf("Error! Close currently Open Box before opening %s!\n",helper);
+  } else if(strcmp("ER:WHAT?",buffer)== 0){
+    printf("Error! Input Malformed\n");
+  } else{
+    printf("UNKNOWN ERROR FIX LOL ADD ITEM TO REPORT: %s\n",buffer);
+  }
+}
+
+
+
 
 int con(){
   int retry = 1;
@@ -108,29 +276,6 @@ int con(){
       continue;
     }
     freeaddrinfo(info);
-
-    // int soc;
-    // if((soc = socket(AF_INET, SOCK_STREAM,0)) < 0){
-    //   printf("Socket Failed\n");
-    //   numtimes++;
-    //   retry = 1;
-    //   continue;
-    // }
-    //
-    // struct sockaddr_in serv_addr;
-    //
-    // serv_addr.sin_family = AF_INET;
-    // serv_addr.sin_port = htons(port);
-    //
-    // struct hostent *h = gethostbyname(address);
-    // serv_addr.sin_addr = *(struct in_addr *)h->h_addr;
-    //
-    // if(connect(soc,(struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0){
-    //   printf("Connection Failed \n");
-    //   numtimes++;
-    //   retry = 1;
-    //   continue;
-    // }
     return soc;
   }
 
@@ -139,135 +284,4 @@ int con(){
     return -1;
   }
 
-}
-
-//"ER:EXISTS","ER:NEXST","ER:OPEND","ER:EMPTY","ER:NOOPN","ER:NOTMT"
-int hello(){
-  char command[] = "HELLO";
-  send(sock, command, strlen(command), 0);
-  memset(buffer, '\0', sizeof(buffer));
-  read(sock,buffer, 1024);
-  if(strcmp(buffer,"HELLO DUMBv0 ready!") == 0){
-    printf("%s\n",buffer);
-  } else{
-    printf("Error: incorrect reply from Server!");
-    return -1;
-  }
-}
-void quit(){
-  char command[] = "GDBYE";
-  send(sock, command, strlen(command), 0);
-  memset(buffer, '\0', sizeof(buffer));
-  read(sock,buffer, 1024);
-  report();
-}
-void create(){
-  printf("Okay, enter the new box's name:\n");
-  memset(buffer, '\0', sizeof(buffer));
-  printf("create:> ");
-  fgets(buffer, 1024, stdin);
-  buffer[strcspn(buffer, "\n")] = 0;
-  char boxname[1024];
-  strcpy(boxname,buffer);
-  char command[] = "CREAT ";
-  strcat(command, buffer);
-  //printf(command);
-  //printf("\n");
-  send(sock, command, strlen(command), 0);
-  memset(buffer, '\0', sizeof(buffer));
-  read(sock,buffer, 1024);
-  report(boxname);
-}
-void delete(){
-  printf("Okay, delete which message box?\n");
-  memset(buffer, '\0', sizeof(buffer));
-  printf("delete:> ");
-  fgets(buffer, 1024, stdin);
-  buffer[strcspn(buffer, "\n")] = 0;
-  char boxname[1024];
-  strcpy(boxname,buffer);
-  char command[] = "DELBX ";
-  strcat(command, buffer);
-  send(sock, command, strlen(command), 0);
-  memset(buffer, '\0', sizeof(buffer));
-  read(sock,buffer, 1024);
-  report(boxname);
-
-}
-void open(){
-  printf("Okay, open which message box?\n");
-  memset(buffer, '\0', sizeof(buffer));
-  printf("open:> ");
-  fgets(buffer, 1024, stdin);
-  buffer[strcspn(buffer, "\n")] = 0;
-  char boxname[1024];
-  strcpy(boxname,buffer);
-  char command[] = "OPNBX ";
-  strcat(command, buffer);
-  send(sock, command, strlen(command), 0);
-  memset(buffer, '\0', sizeof(buffer));
-  read(sock,buffer, 1024);
-  report(boxname);
-}
-void closebx(){
-  printf("Okay, close which message box?\n");
-  memset(buffer, '\0', sizeof(buffer));
-  printf("close:> ");
-  fgets(buffer, 1024, stdin);
-  buffer[strcspn(buffer, "\n")] = 0;
-  char boxname[1024];
-  strcpy(boxname,buffer);
-  char command[] = "CLSBX ";
-  strcat(command, buffer);
-  send(sock, command, strlen(command), 0);
-  memset(buffer, '\0', sizeof(buffer));
-  read(sock,buffer, 1024);
-  report(boxname);
-}
-void next(){
-  char command[] = "NXTMG";
-  send(sock, command, strlen(command), 0);
-  memset(buffer, '\0', sizeof(buffer));
-  read(sock,buffer, 1024);
-  report(NULL);
-}
-void put(){
-  printf("Okay, please enter a message?\n");
-  memset(buffer, '\0', sizeof(buffer));
-  printf("put:> ");
-  fgets(buffer, 1024, stdin);
-  buffer[strcspn(buffer, "\n")] = 0;
-  char command[] = "PUTMG!";
-  int length = strlen(buffer);
-  char _len[100];
-  snprintf(_len,100,"%d!",length);
-  strcat(command,_len);
-  strcat(command, buffer);
-
-  send(sock, command, strlen(command), 0);
-  memset(buffer, '\0', sizeof(buffer));
-  read(sock,buffer, 1024);
-  report(NULL);
-}
-//"ER:EXISTS","ER:NEXST","ER:OPEND","ER:EMPTY","ER:NOOPN","ER:NOTMT"
-void report(char* helper){
-  if(strcmp("OK!",buffer) == 0 && helper != NULL){
-    printf("Success! Message Box Created!\n");
-  } else if(strcmp("ER:EXISTS",buffer)== 0 && helper != NULL){
-    printf("Error! %s Already Exists!\n",helper);
-  } else if(strcmp("ER:NEXST",buffer)== 0 && helper != NULL){
-    printf("Error! %s Does Not Exists!\n",helper);
-  } else if(strcmp("ER:OPEND",buffer)== 0 && helper != NULL){
-    printf("Error! %s is Opened by Another User!\n",helper);
-  } else if(strcmp("ER:EMPTY",buffer)== 0){
-    printf("Error! Message Box is Empty!\n");
-  } else if(strcmp("ER:NOOPN",buffer)== 0){
-    printf("Error! No Message Box is Open!\n");
-  } else if(strcmp("ER:NOTMT",buffer)== 0 && helper != NULL){
-    printf("Error! %s is Not Empty!\n",helper);
-  } else if(strcmp("ER:NOCLS",buffer)== 0 && helper != NULL){
-    printf("Error! Close currently Open Box before opening %s!\n",helper);
-  } else{
-    printf("UNKNOWN ERROR FIX LOL ADD ITEM TO REPORT: %s\n",buffer);
-  }
 }
