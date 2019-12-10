@@ -1,0 +1,103 @@
+test 1
+client side :
+exit command entered and got Goodbye, while server has seg fault
+
+test 2
+HELLO DUMBv0 ready!
+> create
+Okay, enter the new box's name:
+create:> first
+Success! first Box created!
+> open <====== this was entered with a space so open " "
+That is not a command, for a command list enter 'help'.
+> open
+Okay, open which message box?
+open:> first
+Success! first Box opened!
+> put
+Okay, please enter a message?
+put:> hello this is first box   <==== the server is showing the message in the buffer but it has now seg faulted
+Success! Message put in box!
+Segmentation fault <== crashed
+
+test 3
+HELLO DUMBv0 ready!
+
+> create
+Okay, enter the new box's name:
+create:> gmail&yahoo
+Success! o Box created!  <========= name is not displayed correctly
+> open
+Okay, open which message box?
+open:> gmail&yahoo
+Success! o Box opened!
+> put
+Okay, please enter a message?
+put:> string
+Success! Message put in box!
+> next
+string
+> put
+Okay, please enter a message?
+put:> string hello
+Success! Message put in box!
+> next
+string hello
+> put
+Okay, please enter a message?
+put:> string hello there      <======== we seem to hit limit on amount of words we can put in box
+Success! Message put in box!
+Segmentation fault      <=========== both server and client crashed.
+
+
+test 4
+
+HELLO DUMBv0 ready!
+
+> create
+Okay, enter the new box's name:
+create:> ironman
+Success! ironman Box created!
+> put
+Okay, please enter a message?
+put:> ironmanwillcomeback
+Error! That Message Box is not Open!<======= worked but crashed both server and client
+Segmentation fault
+
+test 5
+
+HELLO DUMBv0 ready!
+> create
+Okay, enter the new box's name:
+create:> first
+Success! first Box created!
+> put
+Okay, please enter a message?
+put:> hello string 1
+Error! That Message Box is not Open!
+> open
+Okay, open which message box?
+open:> first
+Success! first Box opened!
+> put
+Okay, please enter a message?
+put:> hello string 1
+Success! Message put in box!
+> put
+Okay, please enter a message?
+put:> hello string 2
+Success! Message put in box!
+> next
+hello string 1
+> next
+hello string 2
+> close
+Okay, close which message box?
+close:> first
+Success! first Box closed!
+> delete
+Okay, delete which message box?
+delete:> first
+Success! first Box deleted!
+> quit
+Goodbye!
