@@ -20,7 +20,7 @@ void report();
 int port;
 char* portAsChar;
 char* address;
-char buffer[1024] = {0};
+char buffer[4096] = {0};
 int sock;
 
 int main(int argc, char** argv){
@@ -77,7 +77,7 @@ int main(int argc, char** argv){
 
 //"ER:EXISTS","ER:NEXST","ER:OPEND","ER:EMPTY","ER:NOOPN","ER:NOTMT"
 int hello(){
-  char command[] = "HELLO";
+  char command[5000] = "HELLO";
   send(sock, command, strlen(command), 0);
   memset(buffer, '\0', sizeof(buffer));
   read(sock,buffer, 1024);
@@ -89,16 +89,11 @@ int hello(){
   }
 }
 void quit(){
-  char command[] = "GDBYE";
+  char command[5000] = "GDBYE";
   send(sock, command, strlen(command), 0);
   memset(buffer, '\0', sizeof(buffer));
-  read(sock,buffer, 1024);
-  if(strcmp("OK!",buffer) == 0){
-    printf("Goodbye!\n");
-    exit(1);
-  } else{
-    report();
-  }
+  printf("Goodbye!\n");
+  exit(1);
 }
 void create(){
   printf("Okay, enter the new box's name:\n");
@@ -108,7 +103,7 @@ void create(){
   buffer[strcspn(buffer, "\n")] = 0;
   char boxname[1024];
   strcpy(boxname,buffer);
-  char command[] = "CREAT ";
+  char command[5000] = "CREAT ";
   strcat(command, buffer);
   //printf(command);
   //printf("\n");
@@ -129,7 +124,7 @@ void delete(){
   buffer[strcspn(buffer, "\n")] = 0;
   char boxname[1024];
   strcpy(boxname,buffer);
-  char command[] = "DELBX ";
+  char command[5000] = "DELBX ";
   strcat(command, buffer);
   send(sock, command, strlen(command), 0);
   memset(buffer, '\0', sizeof(buffer));
@@ -149,7 +144,7 @@ void open(){
   buffer[strcspn(buffer, "\n")] = 0;
   char boxname[1024];
   strcpy(boxname,buffer);
-  char command[] = "OPNBX ";
+  char command[5000] = "OPNBX ";
   strcat(command, buffer);
   send(sock, command, strlen(command), 0);
   memset(buffer, '\0', sizeof(buffer));
@@ -168,7 +163,7 @@ void closebx(){
   buffer[strcspn(buffer, "\n")] = 0;
   char boxname[1024];
   strcpy(boxname,buffer);
-  char command[] = "CLSBX ";
+  char command[5000] = "CLSBX ";
   strcat(command, buffer);
   send(sock, command, strlen(command), 0);
   memset(buffer, '\0', sizeof(buffer));
@@ -180,7 +175,7 @@ void closebx(){
   }
 }
 void next(){
-  char command[] = "NXTMG";
+  char command[5000] = "NXTMG";
   send(sock, command, strlen(command), 0);
   memset(buffer, '\0', sizeof(buffer));
   read(sock,buffer, 1024);
@@ -200,7 +195,7 @@ void put(){
   printf("put:> ");
   fgets(buffer, 1024, stdin);
   buffer[strcspn(buffer, "\n")] = 0;
-  char command[] = "PUTMG!";
+  char command[5000] = "PUTMG!";
   int length = strlen(buffer);
   char _len[100];
   snprintf(_len,100,"%d!",length);

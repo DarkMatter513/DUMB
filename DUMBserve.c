@@ -10,20 +10,6 @@
 #include <ctype.h>
 #define NUM_CONNECTIONS 20
 
-
-void* handleConnection(void* soc);
-void printaction(int sock, char* action);
-void printerror(int sock, char* action);
-void printdata();
-int hello(int soc);
-int gdbye(int soc);
-int creat(int soc, char* name);
-struct messagebox* opnbx(int soc, char* name);
-int nxtmg(int soc, struct messagebox* currentbox);
-int putmg(int soc, struct messagebox* currentbox, int length, char* mess);
-int delbx(int soc, char* name);
-struct messagebox* clsbx(int soc, char* name, struct messagebox* open);
-
 //Extra Credit is trying to open 2 boxes at once ADDED "ER:NOCLS" error!
 //enum commands{HELLO, GDBYE, CREAT, OPNBX, NXTMG, PUTMG, DELBX, CLSBX};
 
@@ -39,6 +25,20 @@ typedef struct messagebox{
   pthread_mutex_t lock;
   struct messagebox* next;
 }messagebox;
+
+void* handleConnection(void* soc);
+void printaction(int sock, char* action);
+void printerror(int sock, char* action);
+void printdata();
+int hello(int soc);
+int gdbye(int soc, struct messagebox* open);
+int creat(int soc, char* name);
+struct messagebox* opnbx(int soc, char* name);
+int nxtmg(int soc, struct messagebox* currentbox);
+int putmg(int soc, struct messagebox* currentbox, int length, char* mess);
+int delbx(int soc, char* name);
+struct messagebox* clsbx(int soc, char* name, struct messagebox* open);
+void printtime();
 
 
 messagebox* first;
@@ -104,20 +104,23 @@ int main(int argc, char**argv){
 void* handleConnection(void* soc){
   int sock = *((int*)soc);
 
-  char buffer[1024] = {0};
+  char buffer[4096] = {0};
+  char buffCopy[4096] = {0};
 
   messagebox* currentopenbox = NULL;
 
   while(1){
     memset(buffer, '\0', sizeof(buffer));
+    memset(buffCopy, '\0', sizeof(buffCopy));
     read(sock,buffer, 1024);
-    char buffCopy[1024];
     strcpy(buffCopy, buffer);
     printf("FULL BUFFER:\n%s\n\n\n", buffer);
     if(strlen(buffCopy) == 5 && strncmp("HELLO", buffer, 5) == 0){
       hello(sock);
     } else if(strlen(buffCopy) == 5 && strncmp("GDBYE", buffer, 5) == 0){
-      gdbye(sock);
+      if(gdbye(sock, currentopenbox) == 1){
+        return;
+      }
     } else if(strlen(strtok(buffCopy," ")) == 5 && strncmp("CREAT", buffer, 5) == 0){
       char* token = strtok(buffer, " ");
       char* name = strtok(NULL, " ");
@@ -178,11 +181,36 @@ int hello(int soc){
   return 1;
 }
 
-int gdbye(int soc){
+int gdbye(int soc, struct messagebox* open){
+  if(open != NULL){
+    clsbx(soc, open->name, open);
+  }
   printaction(soc, "GDBYE");
-  send(soc, ok, strlen(ok), 0);
+  int s = soc;
+  socklen_t len;
+  struct sockaddr_storage addr;
+  char ipstr[INET6_ADDRSTRLEN];
+  int port;
+
+  len = sizeof addr;
+  getpeername(s, (struct sockaddr*)&addr, &len);
+
+  // deal with both IPv4 and IPv6:
+  if (addr.ss_family == AF_INET) {
+    struct sockaddr_in *s = (struct sockaddr_in *)&addr;
+    port = ntohs(s->sin_port);
+    inet_ntop(AF_INET, &s->sin_addr, ipstr, sizeof ipstr);
+  } else { // AF_INET6
+    struct sockaddr_in6 *s = (struct sockaddr_in6 *)&addr;
+    port = ntohs(s->sin6_port);
+    inet_ntop(AF_INET6, &s->sin6_addr, ipstr, sizeof ipstr);
+  }
+
   while(close(soc) != 0);
-  printaction(soc, "disconnected");
+  printtime();
+  printf("%s ", ipstr);
+  printf("%s\n", "disconnected");
+  fflush(stdout);
   return 1;
 }
 
