@@ -410,12 +410,15 @@ struct messagebox* clsbx(int soc, char* name, struct messagebox* open){
     send(soc, err, strlen(err), 0);
     return open;
 
-  } else if(pthread_mutex_unlock(&(open->lock)) == 0){
+  } else if(open != NULL && pthread_mutex_unlock(&(open->lock)) == 0){
     printaction(soc, "CLSBX");
     send(soc, ok, strlen(ok),0);
     return NULL;
   }
-
+  char err[] = "ER:NOOPN";
+  printerror(soc, err);
+  send(soc, err, strlen(err), 0);
+  return open;
 }
 
 

@@ -230,7 +230,7 @@ void report(char* helper){
   } else if(strcmp("ER:WHAT?",buffer)== 0){
     printf("Error! Input Malformed\n");
   } else{
-    printf("UNKNOWN ERROR FIX LOL ADD ITEM TO REPORT: %s\n",buffer);
+    printf("%s\n",buffer);
   }
 }
 
