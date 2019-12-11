@@ -151,6 +151,11 @@ void* handleConnection(void* soc){
       char* token = strtok(buffer,"!");
       int length = atoi(strtok(NULL,"!"));
       char* newmsg = strtok(NULL,"!");
+      if(length != strlen(newmsg)){
+        char what[] = "ER:WHAT?";
+        send(sock, what, strlen(what),0);
+        continue;
+      }
       putmg(sock, currentopenbox, length, newmsg);
     } else if(strlen(strtok(buffCopy," ")) == 5 && strncmp("DELBX", buffer, 5) == 0){
       char* token = strtok(buffer, " ");
