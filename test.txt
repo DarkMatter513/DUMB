@@ -1,0 +1,125 @@
+some final tests
+
+test 1
+HELLO DUMBv0 ready!
+> create
+Okay, enter the new box's name:
+create:> phantom
+Success! phantom Box created!
+> open
+Okay, open which message box?
+open:> phantom
+Success! phantom Box opened!
+> put
+Okay, please enter a message?
+put:> hello
+Success! Message put in box!
+> next
+hello
+>
+That is not a command, for a command list enter 'help'.
+>
+That is not a command, for a command list enter 'help'.
+> close
+Okay, close which message box?
+close:> phantom
+Success! phantom Box closed!
+> delete
+Okay, delete which message box?
+delete:> phantom
+Success! phantom Box deleted!
+> create
+Okay, enter the new box's name:
+create:> chater
+Success! chater Box created!
+> create
+Okay, enter the new box's name:
+create:> dog
+Error! Input Malformed
+> create
+Okay, enter the new box's name:
+create:> phantom
+Success! phantom Box created!
+> create
+Okay, enter the new box's name:
+create:> phantom
+Error! phantom Already Exists!
+> close
+Okay, close which message box?
+close:> chater
+UNKNOWN ERROR FIX LOL ADD ITEM TO REPORT: <===== server at seg fault
+> quit
+Goodbye!
+
+server log
+31 11 Dec 172.17.11.208 connected
+31 11 Dec 172.17.11.208 HELLO
+39 11 Dec 172.17.11.208 GDBYE
+39 11 Dec 172.17.11.208 disconnected
+39 11 Dec 172.17.11.208 connected
+39 11 Dec 172.17.11.208 HELLO
+39 11 Dec 172.17.11.208 CREAT
+39 11 Dec 172.17.11.208 OPNBX
+39 11 Dec 172.17.11.208 PUTMG
+40 11 Dec 172.17.11.208 NXTMG
+40 11 Dec 172.17.11.208 CLSBX
+40 11 Dec 172.17.11.208 DELBX
+40 11 Dec 172.17.11.208 CREAT
+40 11 Dec 172.17.11.208 CREAT
+40 11 Dec 172.17.11.208 ER:EXISTS
+Segmentation fault
+
+
+test 2
+trying to replicate test1 with small Input
+HELLO DUMBv0 ready!
+> create
+Okay, enter the new box's name:
+create:> test1
+Success! test1 Box created!
+> create
+Okay, enter the new box's name:
+create:> test2
+Success! test2 Box created!
+> close
+Okay, close which message box?
+close:> test1
+UNKNOWN ERROR FIX LOL ADD ITEM TO REPORT: <=== seems that if we close the box without open then server crashes. 
+>
+quit
+server log
+44 11 Dec 172.17.11.208 connected
+44 11 Dec 172.17.11.208 HELLO
+46 11 Dec 172.17.11.208 CREAT
+46 11 Dec 172.17.11.208 CREAT
+Segmentation fault
+
+
+test 3
+HELLO DUMBv0 ready!
+> create
+Okay, enter the new box's name:
+create:> test 1
+Error! Input Malformed
+> creaet
+That is not a command, for a command list enter 'help'.
+> create
+Okay, enter the new box's name:
+create:> test1
+Success! test1 Box created!
+> delete
+Okay, delete which message box?
+delete:> test1
+Success! test1 Box deleted!
+> delete
+Okay, delete which message box?
+delete:> test2   <====================should say test2 doesnt exist
+UNKNOWN ERROR FIX LOL ADD ITEM TO REPORT: <===== server crashed and seg fault while client still takes Input
+
+server log
+
+51 11 Dec 172.17.11.208 connected
+51 11 Dec 172.17.11.208 HELLO
+51 11 Dec 172.17.11.208 CREAT
+51 11 Dec 172.17.11.208 DELBX
+Segmentation fault

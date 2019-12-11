@@ -3,8 +3,12 @@ that will run through every possible error and command we could do for example s
 commands will throw the same error so for each command we tested multiple times the
 the correct way of invoking it along with incorrect ways to make sure all the errors for
 that command worked. We also created a Dummy client that will send malformed messages
-for example for put we made it send the wrong length to also test.
+for example, for put we made it send the wrong length to also test.
 
 
 Next we finally redid this while having 2 clients connected at the same time
 making sure to do things simultaneously in order to assure our server was running to spec.
+We also have NOCLS functionality in the server for extra credit. Along with the commands we
+also tested things like trying to open box without creating it or trying to put message
+without opening it, in which case it gave us the desired error. We have also made sure that we
+don't deadlock the threads.
