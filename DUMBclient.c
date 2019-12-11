@@ -218,7 +218,7 @@ void report(char* helper){
   } else if(strcmp("ER:NEXST",buffer)== 0 && helper != NULL){
     printf("Error! %s Does Not Exists!\n",helper);
   } else if(strcmp("ER:OPEND",buffer)== 0 && helper != NULL){
-    printf("Error! %s is Opened by Another User!\n",helper);
+    printf("Error! %s is Opened by You or Another User!\n",helper);
   } else if(strcmp("ER:EMPTY",buffer)== 0){
     printf("Error! Message Box is Empty!\n");
   } else if(strcmp("ER:NOOPN",buffer)== 0){

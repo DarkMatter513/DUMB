@@ -8,6 +8,7 @@
 #include <pthread.h>
 #include <time.h>
 #include <ctype.h>
+#include <errno.h>
 #define NUM_CONNECTIONS 20
 
 //Extra Credit is trying to open 2 boxes at once ADDED "ER:NOCLS" error!
@@ -49,7 +50,7 @@ int main(int argc, char**argv){
   //check args
   if(argc == 2){
     port = atoi(argv[1]);
-    printf("\nPORT ENTERED: %d\n", port);
+    //printf("\nPORT ENTERED: %d\n", port);
     if(port <= 4000){ // making sure port is always greater than 4k
       perror("Port Error: port too small");
       exit(EXIT_FAILURE);
@@ -114,7 +115,7 @@ void* handleConnection(void* soc){
     memset(buffCopy, '\0', sizeof(buffCopy));
     read(sock,buffer, 1024);
     strcpy(buffCopy, buffer);
-    printf("FULL BUFFER:\n%s\n\n\n", buffer);
+    //printf("FULL BUFFER:\n%s\n\n\n", buffer);
     if(strlen(buffCopy) == 5 && strncmp("HELLO", buffer, 5) == 0){
       hello(sock);
     } else if(strlen(buffCopy) == 5 && strncmp("GDBYE", buffer, 5) == 0){
@@ -165,7 +166,7 @@ void* handleConnection(void* soc){
       char what[] = "ER:WHAT?";
       send(sock, what, strlen(what),0);
     }
-    printdata();
+    //printdata();
   }
 
   //send(sock, test, strlen(test),0);
@@ -215,6 +216,9 @@ int gdbye(int soc, struct messagebox* open){
 }
 
 int creat(int soc, char* name){
+  if(first == NULL){
+    first = (messagebox*) malloc(sizeof(messagebox));
+  }
   messagebox* current = first;
   if(current->name == NULL){
     current->name = (char*)malloc(sizeof(name));
@@ -290,14 +294,16 @@ int nxtmg(int soc, struct messagebox* currentbox){
     char* data = currentmessage->message;
     int len = currentmessage->length;
     currentbox->messages = currentmessage->next;
-    char buff[1024] ="OK!";
+    char buff[4096];
+    memset(buff, '\0', sizeof(buff));
+    strcpy(buff,"OK!");
     char _len[100];
+    memset(_len, '\0', sizeof(_len));
     snprintf(_len,100,"%d!",len);
     strcat(buff,_len);
     strcat(buff,data);
     printaction(soc, "NXTMG");
     send(soc, buff, strlen(buff),0);
-    currentbox->messages = currentmessage->next;
     free(currentmessage);
     return 1;
   } else{
@@ -363,11 +369,7 @@ int delbx(int soc, char* name){
           return -1;
         }
         if(prev == NULL){
-          if(current->next == NULL){
-            first = (messagebox*) malloc(sizeof(messagebox));
-          } else{
-            first = current->next;
-          }
+          first = current->next;
         }else{
           prev->next = current->next;
         }
@@ -534,7 +536,8 @@ void printerror(int sock, char* action){
   snprintf(str, 1024, "%s", action);
   strcat(t,addr);
   strcat(t,str);
-  perror(t);
+  fprintf( stderr, "%s\n",t);
+  //perror(t);
   free(t);
   free(addr);
 }
